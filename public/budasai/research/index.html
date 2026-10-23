@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Research — BUDASAI</title>
+<meta name="description" content="Independent equity, sector and macro research. Filter, search, and read the latest reports from BUDASAI." />
+<meta property="og:title" content="Research — BUDASAI" />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/budasai/assets/css/styles.css" />
+<style>
+  .r-thumb-img { width:100%; height:160px; object-fit:cover; display:block; }
+</style>
+</head>
+<body>
+<div data-component="header"></div>
+<section class="page-header">
+  <div class="hero-grid-bg"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <span class="eyebrow"><span class="dot"></span> Research Archive</span>
+    <h1>Independent <span class="gradient-text">research</span> for serious investors.</h1>
+    <p>Equity deep-dives, sector reports, and macro outlooks. Filter, search, and open any company name for the full report.</p>
+  </div>
+</section>
+
+<section class="section" data-section="research">
+  <div class="container">
+    <div class="filters glass">
+      <input class="search input" placeholder="Search companies, sectors, themes…" id="r-search"/>
+      <select id="r-sector"><option value="">All sectors</option></select>
+      <select id="r-country"><option value="">All countries</option></select>
+      <select id="r-type"><option value="">All types</option></select>
+    </div>
+
+    <div class="research-grid" id="r-grid" style="margin-top:24px"></div>
+
+    <div class="newsletter glass mt-6" style="margin-top:60px" data-section="reports">
+      <span class="eyebrow"><span class="dot"></span> Premium Reports</span>
+      <h2 style="margin-top:8px">Institutional-grade reports, <span class="gradient-text">coming soon</span></h2>
+      <p>Quarterly deep-dives, model portfolios, and earnings updates for subscribers.</p>
+      <form class="newsletter-form" data-newsletter novalidate>
+        <input class="input" type="email" placeholder="Join the waitlist" required aria-label="Email"/>
+        <button class="btn btn-primary" type="submit">Join Waitlist</button>
+      </form>
+      <div data-status class="mt-2 muted" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<script src="/budasai/assets/js/dummy-data.js"></script>
+<script src="/budasai/assets/js/api.js"></script>
+<script src="/budasai/assets/js/main.js"></script>
+<script>
+let DATA = [];
+const colorFor = (s) => ({Banking:'rgb(16,185,129)',Technology:'rgb(47,128,255)',Consumer:'rgb(16,185,129)',Pharma:'rgb(16,185,129)',Energy:'rgb(47,128,255)',Auto:'rgb(16,185,129)',Macro:'rgb(16,185,129)'}[s] || 'rgb(47,128,255)');
+function thumb(r) {
+  if (r.image_url) return `<img class="r-thumb-img" src="${r.image_url}" alt="${r.company_name||r.title}" loading="lazy"/>`;
+  const c = colorFor(r.sector); const fill = c.replace('rgb','rgba').replace(')',',.25)');
+  return `<svg viewBox="0 0 400 160" preserveAspectRatio="none"><path d="M0,${80+Math.random()*30} C80,${40+Math.random()*60} 160,${60+Math.random()*60} 240,${30+Math.random()*60} C320,${20+Math.random()*60} 360,${60+Math.random()*40} 400,${30+Math.random()*40} L400,160 L0,160 Z" fill="${fill}"/></svg>`;
+}
+
+function buildFilters() {
+  const opts = (id, vals) => {
+    const sel = document.getElementById(id);
+    [...new Set(vals.filter(Boolean))].sort().forEach(v => sel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
+  };
+  opts('r-sector', DATA.map(d => d.sector));
+  opts('r-country', DATA.map(d => d.country));
+  opts('r-type', DATA.map(d => d.type));
+}
+
+function render() {
+  const q = document.getElementById('r-search').value.toLowerCase();
+  const s = document.getElementById('r-sector').value;
+  const c = document.getElementById('r-country').value;
+  const ty = document.getElementById('r-type').value;
+  const grid = document.getElementById('r-grid');
+  const rows = DATA.filter(r =>
+    (!q || (r.title+' '+r.company_name+' '+r.sector).toLowerCase().includes(q)) &&
+    (!s || r.sector === s) && (!c || r.country === c) && (!ty || r.type === ty)
+  );
+  grid.innerHTML = rows.length ? rows.map(r => `
+    <article class="research-card glass">
+      <a href="/budasai/company?slug=${encodeURIComponent(r.slug||'')}&ticker=${encodeURIComponent(r.ticker||'')}" style="color:inherit;text-decoration:none">
+        <div class="thumb">${thumb(r)}</div>
+        <div class="body">
+          <span class="tag">${r.type||'Report'}</span>
+          <h3>${r.company_name || r.title}</h3>
+          <p class="muted">${r.summary || ''}</p>
+          <div class="meta"><span>${r.sector||''} · ${r.country||''}</span><span>${r.read_time||''}</span></div>
+        </div>
+      </a>
+    </article>
+  `).join('') : '<p class="muted" style="grid-column:1/-1;text-align:center;padding:40px">No results match your filters.</p>';
+}
+
+async function init() {
+  const live = await window.BUDASAI_API.fetchData('research');
+  if (!Array.isArray(live) || !live.length) {
+    document.getElementById('r-grid').innerHTML = `<div class="glass" style="grid-column:1/-1;padding:50px;text-align:center"><h3 style="margin:0 0 8px">No research available</h3><p class="muted" style="margin:0">Please connect your FastAPI backend in <a href="/budasai/admin" style="color:var(--electric)">Admin</a> to load research reports.</p></div>`;
+    return;
+  }
+  DATA = live;
+  buildFilters();
+  ['r-search','r-sector','r-country','r-type'].forEach(id => document.getElementById(id).addEventListener('input', render));
+  render();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+<div data-component="footer"></div>
+</body></html>

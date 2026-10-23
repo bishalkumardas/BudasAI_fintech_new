@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin — BUDASAI</title>
+<meta name="description" content="BUDASAI admin console — connect every data point on the site to your FastAPI backend." />
+<meta name="robots" content="noindex,nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/budasai/assets/css/styles.css" />
+<style>
+  .admin-wrap { display:grid; grid-template-columns: 280px 1fr; gap:28px; }
+  @media (max-width: 960px){ .admin-wrap { grid-template-columns: 1fr; } }
+  .admin-side { position: sticky; top: 90px; align-self:start; padding:18px; }
+  .admin-side h4 { margin:0 0 12px; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--text-soft); }
+  .admin-side a { display:block; padding:9px 12px; border-radius:10px; color:var(--text-muted); text-decoration:none; font-size:14px; }
+  .admin-side a:hover { background: var(--surface); color: var(--text); }
+  .ep-card { padding:24px; margin-bottom:22px; }
+  .ep-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .ep-title { margin:0; font-family:'Space Grotesk',sans-serif; font-size:20px; }
+  .ep-method { font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 9px; border-radius:6px; background:rgba(47,128,255,.15); color:var(--electric); letter-spacing:.06em; }
+  .ep-method.post { background:rgba(16,185,129,.15); color:var(--emerald); }
+  .ep-row { display:grid; grid-template-columns: 140px 1fr auto auto; gap:10px; margin-top:14px; align-items:center; }
+  @media (max-width: 720px){ .ep-row { grid-template-columns: 1fr; } }
+  .ep-row label { font-size:12px; color:var(--text-muted); }
+  .ep-row .input { font-family:'JetBrains Mono',monospace; font-size:13px; }
+  .schema { margin-top:16px; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .schema table { width:100%; border-collapse:collapse; font-size:13px; }
+  .schema th, .schema td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .schema th { background: var(--surface); font-weight:600; color: var(--text-muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+  .schema tr:last-child td { border-bottom:0; }
+  .schema code { font-family:'JetBrains Mono',monospace; color:var(--emerald); font-size:12px; }
+  .schema .req { color:#ef4444; font-weight:600; }
+  .schema .opt { color: var(--text-soft); }
+  .sample { margin-top:12px; background: rgba(10,21,48,.4); border:1px solid var(--border); border-radius:10px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.55; color:var(--text-muted); overflow:auto; max-height:240px; }
+  .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--text-soft); margin-right:6px; }
+  .status-dot.ok { background: var(--emerald); box-shadow:0 0 10px var(--emerald); }
+  .status-dot.err { background: #ef4444; box-shadow:0 0 10px #ef4444; }
+  .global-bar { padding:22px 24px; margin-bottom:28px; display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .global-bar .input, .global-bar select { font-family:'JetBrains Mono',monospace; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; font-size:12px; background: var(--surface); border:1px solid var(--border); }
+  details.adv { margin-top:14px; }
+  details.adv summary { cursor:pointer; font-size:13px; color: var(--text-muted); padding:6px 0; }
+  .test-out { margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:12px; color: var(--text-muted); }
+  .switch { position:relative; display:inline-block; width:38px; height:22px; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider-sw { position:absolute; cursor:pointer; inset:0; background: var(--surface); border:1px solid var(--border); border-radius:22px; transition:.2s; }
+  .slider-sw:before { position:absolute; content:""; height:14px; width:14px; left:3px; top:3px; background: var(--text-muted); border-radius:50%; transition:.2s; }
+  .switch input:checked + .slider-sw { background: rgba(16,185,129,.25); border-color: var(--emerald); }
+  .switch input:checked + .slider-sw:before { transform: translateX(16px); background: var(--emerald); }
+</style>
+</head>
+<body>
+<div data-component="header"></div>
+
+<section class="page-header">
+  <div class="hero-grid-bg"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <span class="eyebrow"><span class="dot"></span> Admin Console · Internal</span>
+    <h1>Connect every data point to your <span class="gradient-text">FastAPI backend</span>.</h1>
+    <p>Set your API base URL, assign endpoints, and toggle which sections are visible on the live site. Toggles auto-save instantly.</p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:20px">
+  <div class="container">
+
+    <div class="glass global-bar">
+      <div style="flex:1; min-width:280px">
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">FastAPI Base URL</label>
+        <input id="api-base" class="input" type="url" placeholder="https://api.your-backend.com" style="width:100%"/>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px">Auth Header (optional)</label>
+        <input id="api-auth" class="input" type="text" placeholder="Bearer eyJhbGciOi..." style="width:100%"/>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <button id="save-all" class="btn btn-primary">Save & Apply</button>
+        <button id="reset-all" class="btn btn-ghost">Reset</button>
+      </div>
+      <div class="pill"><span class="status-dot" id="global-dot"></span><span id="global-status">Not connected</span></div>
+    </div>
+
+    <div class="admin-wrap">
+      <aside class="glass admin-side">
+        <h4>Endpoints</h4>
+        <div id="ep-nav"></div>
+        <h4 style="margin-top:18px">How it works</h4>
+        <p class="muted" style="font-size:12px;line-height:1.6">Every section on the site reads from these endpoints. The <strong>Show on site</strong> toggle hides the related section everywhere. Image fields accept any public URL (CDN, S3, Cloudinary). Calculators have no toggle — they always render.</p>
+      </aside>
+
+      <div id="ep-list"></div>
+    </div>
+
+  </div>
+</section>
+
+<div data-component="footer"></div>
+<script src="/budasai/assets/js/dummy-data.js"></script>
+<script src="/budasai/assets/js/api.js"></script>
+<script src="/budasai/assets/js/main.js"></script>
+<script>
+// =====================================================================
+// BUDASAI admin — single source of truth for every data point on the site
+// =====================================================================
+const ENDPOINTS = [
+  {
+    key: 'tickers', title: 'Market Tickers', used: 'Home — hero ticker cards',
+    method: 'GET', defaultPath: '/api/tickers', response: 'Array of objects', toggle: true,
+    columns: [
+      ['symbol', 'string', true, 'Ticker symbol (e.g. "NIFTY 50")'],
+      ['price', 'number|string', true, 'Latest price'],
+      ['change_percent', 'number', true, 'Percent change (+ / -)'],
+      ['sparkline', 'number[]', false, '15-30 data points for the mini chart'],
+    ],
+    sample: [{ symbol: 'NIFTY 50', price: 24832.10, change_percent: 0.84, sparkline: [40,42,44,46,48,50,52,55,58,62] }]
+  },
+  {
+    key: 'stats', title: 'Homepage Stats', used: 'Home — animated counter row',
+    method: 'GET', defaultPath: '/api/stats', response: 'Single object', toggle: true,
+    columns: [
+      ['companies_covered', 'number', true, 'Total companies in coverage'],
+      ['research_reports', 'number', true, 'Total reports published'],
+      ['investors_educated', 'number', true, 'Users / subscribers count'],
+      ['avg_cagr', 'number', true, 'Average coverage CAGR (%)'],
+    ],
+    sample: { companies_covered: 120, research_reports: 48, investors_educated: 25000, avg_cagr: 14.6 }
+  },
+  {
+    key: 'research', title: 'Research Reports & Company Profiles (merged)',
+    used: 'Home featured · /research archive · /company.html?slug=… detail page',
+    method: 'GET', defaultPath: '/api/research', response: 'Array of objects', toggle: true,
+    columns: [
+      ['slug', 'string', true, 'URL slug — used as ?slug= on the detail page'],
+      ['ticker', 'string', true, 'Exchange ticker, sent to PDF endpoint'],
+      ['company_name', 'string', true, 'Company name — used as the report link text'],
+      ['title', 'string', true, 'Report headline'],
+      ['type', 'string', true, 'Company Analysis | Sector Report | Market Outlook'],
+      ['sector', 'string', true, 'Banking | Technology | Consumer | Pharma | Energy | Auto | Macro'],
+      ['country', 'string', true, 'India | USA | Global'],
+      ['summary', 'string', true, 'Short description shown on the card'],
+      ['image_url', 'string', false, 'Public URL — cover image shown on card & detail hero'],
+      ['read_time', 'string', true, 'e.g. "12 min read"'],
+      ['date', 'string', true, 'e.g. "Jun 2026" or ISO date'],
+      ['featured', 'boolean', false, 'true → appears on the homepage'],
+      ['overview', 'string', false, 'DETAIL PAGE — long-form overview HTML/markdown'],
+      ['business_model', 'string', false, 'DETAIL PAGE — business model paragraph'],
+      ['market_cap', 'number', false, 'DETAIL PAGE — market cap'],
+      ['ratios', 'object', false, 'DETAIL PAGE — { pe, pb, roe, roa, nim, gnpa, cet1, div_yield }'],
+      ['revenue_series', 'number[]', false, 'DETAIL PAGE — chart series'],
+      ['profit_series', 'number[]', false, 'DETAIL PAGE — chart series'],
+      ['risks', 'string[]', false, 'DETAIL PAGE — bullet list'],
+      ['opportunities', 'string[]', false, 'DETAIL PAGE — bullet list'],
+    ],
+    sample: [{
+      slug: 'hdfc-bank-compounding-engine', ticker: 'HDFCBANK', company_name: 'HDFC Bank',
+      title: 'HDFC Bank: The Compounding Engine Re-rated', type: 'Company Analysis',
+      sector: 'Banking', country: 'India',
+      summary: 'Deep-dive into NIM trajectory and post-merger synergies.',
+      image_url: 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800',
+      read_time: '12 min read', date: '2026-06-04', featured: true,
+      overview: 'HDFC Bank is India\'s largest private sector lender...',
+      ratios: { pe: 18.4, pb: 2.7, roe: 15.8, roa: 1.9, nim: 3.5, gnpa: 1.24, cet1: 16.8, div_yield: 1.2 },
+      revenue_series: [100,115,130,148,170,195,225,260,300,345],
+      profit_series: [20,24,28,33,40,48,58,68,82,98],
+      risks: ['Margin compression from deposit competition.'],
+      opportunities: ['Cross-sell mortgage to deposit base.'],
+    }]
+  },
+  {
+    key: 'company_pdf', title: 'Company Report PDF', used: 'Company detail — Download PDF button',
+    method: 'POST', defaultPath: '/api/research/pdf', response: 'Formatted PDF (application/pdf)', toggle: false,
+    columns: [
+      ['ticker', 'string', true, 'REQUEST — only the ticker is sent. Response must be the formatted PDF binary.'],
+    ],
+    sample: { request: { ticker: 'HDFCBANK' }, response: 'Content-Type: application/pdf — binary PDF stream' }
+  },
+  {
+    key: 'blogs', title: 'Blog Posts', used: '/blog.html — article grid',
+    method: 'GET', defaultPath: '/api/blogs', response: 'Array of objects', toggle: true,
+    columns: [
+      ['id', 'string|number', true, 'Unique blog id'],
+      ['slug', 'string', true, 'URL slug'],
+      ['title', 'string', true, 'Blog title'],
+      ['category', 'string', true, 'Must match a category slug from /api/blog/categories'],
+      ['level', 'string', false, 'Beginner | Intermediate | Advanced'],
+      ['summary', 'string', true, 'Short description shown on the card'],
+      ['image_url', 'string', false, 'Public URL — cover image'],
+      ['author', 'string', false, 'Author display name'],
+      ['read_time', 'string', true, 'e.g. "8 min read"'],
+      ['date', 'string', true, 'Published date'],
+      ['content', 'string', false, 'Full HTML/markdown body (for future detail page)'],
+    ],
+    sample: [{
+      id: 1, slug: 'reading-a-balance-sheet', title: 'How to Read a Balance Sheet',
+      category: 'valuation', level: 'Beginner', summary: 'Assets, liabilities and equity, decoded.',
+      image_url: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800',
+      author: 'BUDASAI Research', read_time: '8 min read', date: '2026-05-10'
+    }]
+  },
+  {
+    key: 'blog_categories', title: 'Blog Categories', used: '/blog.html — filter chips',
+    method: 'GET', defaultPath: '/api/blog/categories', response: 'Array of objects', toggle: false,
+    columns: [
+      ['slug', 'string', true, 'Category slug — referenced by blogs.category'],
+      ['name', 'string', true, 'Display name shown on the filter chip'],
+      ['description', 'string', false, 'Optional tooltip / sub-label'],
+      ['order', 'number', false, 'Sort order'],
+    ],
+    sample: [
+      { slug: 'investing-101', name: 'Investing 101', order: 1 },
+      { slug: 'valuation', name: 'Valuation', order: 2 },
+      { slug: 'portfolio', name: 'Portfolio', order: 3 },
+      { slug: 'macro', name: 'Macro', order: 4 },
+    ]
+  },
+  {
+    key: 'tools', title: 'Investment Tools section', used: 'Home — tools grid', toggle: true,
+    method: 'GET', defaultPath: '/api/tools', response: 'Array of objects',
+    columns: [
+      ['title', 'string', true, 'Tool title'],
+      ['description', 'string', true, 'Short description'],
+      ['status', 'string', true, 'live | coming-soon'],
+      ['url', 'string', false, 'Link target if live'],
+    ],
+    sample: [{ title: 'Financial Calculators', description: 'SIP, CAGR, retirement...', status: 'live', url: '/budasai/calculators' }]
+  },
+  {
+    key: 'newsletter', title: 'Newsletter Subscribe', used: 'Home + Research — newsletter forms',
+    method: 'POST', defaultPath: '/api/newsletter', response: 'Single object', toggle: false,
+    columns: [
+      ['email', 'string', true, 'REQUEST — subscriber email'],
+      ['source', 'string', false, 'REQUEST — page that triggered subscribe'],
+      ['success', 'boolean', true, 'RESPONSE — true on success'],
+      ['message', 'string', false, 'RESPONSE — human readable message'],
+    ],
+    sample: { request: { email: 'you@example.com', source: 'home' }, response: { success: true, message: 'Subscribed.' } }
+  },
+  {
+    key: 'user', title: 'User Profile', used: 'Future — auth & subscriber dashboard',
+    method: 'GET', defaultPath: '/api/user/me', response: 'Single object', toggle: false,
+    columns: [
+      ['id', 'string', true, 'User id (uuid)'],
+      ['email', 'string', true, 'User email'],
+      ['name', 'string', false, 'Display name'],
+      ['plan', 'string', true, 'free | premium | institutional'],
+    ],
+    sample: { id: 'u_123', email: 'investor@example.com', name: 'A. Investor', plan: 'premium' }
+  },
+  {
+    key: 'portfolio', title: 'Portfolio Holdings', used: 'Future — portfolio analytics',
+    method: 'GET', defaultPath: '/api/portfolio', response: 'Array of objects', toggle: false,
+    columns: [
+      ['ticker', 'string', true, 'Ticker'], ['name', 'string', true, 'Company name'],
+      ['quantity', 'number', true, 'Units held'], ['avg_price', 'number', true, 'Average buy price'],
+      ['current_price', 'number', true, 'Latest market price'], ['sector', 'string', false, 'Sector'],
+    ],
+    sample: [{ ticker: 'HDFCBANK', name: 'HDFC Bank Ltd', quantity: 50, avg_price: 1450, current_price: 1685, sector: 'Banking' }]
+  },
+  {
+    key: 'reports', title: 'Premium Reports (downloads)', used: 'Research → premium subscriber reports',
+    method: 'GET', defaultPath: '/api/reports', response: 'Array of objects', toggle: true,
+    columns: [
+      ['id', 'string', true, 'Report id'], ['title', 'string', true, 'Report title'],
+      ['type', 'string', true, 'quarterly | thematic | model-portfolio'],
+      ['pdf_url', 'string', true, 'Signed URL for the PDF'],
+      ['published_at', 'string', true, 'ISO timestamp'],
+      ['locked', 'boolean', false, 'true if requires premium plan'],
+    ],
+    sample: [{ id: 'r_q2_26', title: 'Q2 2026 India Strategy', type: 'quarterly', pdf_url: 'https://cdn.../q2-2026.pdf', published_at: '2026-04-15T00:00:00Z', locked: true }]
+  },
+];
+
+const STORAGE_KEY = window.BUDASAI_API.STORAGE_KEY;
+const cfg = window.BUDASAI_API.getConfig();
+ENDPOINTS.forEach(e => {
+  if (!cfg.endpoints[e.key]) cfg.endpoints[e.key] = { path: e.defaultPath, method: e.method, visible: true };
+  if (cfg.endpoints[e.key].visible === undefined) cfg.endpoints[e.key].visible = true;
+});
+document.getElementById('api-base').value = cfg.base || '';
+document.getElementById('api-auth').value = cfg.auth || '';
+
+function save() {
+  cfg.base = document.getElementById('api-base').value.trim().replace(/\/$/, '');
+  cfg.auth = document.getElementById('api-auth').value.trim();
+  ENDPOINTS.forEach(e => {
+    const p = document.getElementById('path-' + e.key);
+    const v = document.getElementById('vis-' + e.key);
+    if (p) cfg.endpoints[e.key].path = p.value.trim() || e.defaultPath;
+    if (v) cfg.endpoints[e.key].visible = v.checked;
+    cfg.endpoints[e.key].method = e.method;
+  });
+  window.BUDASAI_API.saveConfig(cfg);
+  setGlobal(cfg.base ? 'ok' : '', cfg.base ? 'Connected to ' + cfg.base : 'Saved (no base URL set)');
+  window.dispatchEvent(new CustomEvent('budasai:config-updated', { detail: cfg }));
+}
+
+function setGlobal(state, text) {
+  const d = document.getElementById('global-dot');
+  d.classList.remove('ok','err'); if (state) d.classList.add(state);
+  document.getElementById('global-status').textContent = text;
+}
+
+function render() {
+  const nav = document.getElementById('ep-nav');
+  const list = document.getElementById('ep-list');
+  nav.innerHTML = ENDPOINTS.map(e => `<a href="#ep-${e.key}">${e.title}</a>`).join('');
+  list.innerHTML = ENDPOINTS.map(e => `
+    <div class="glass ep-card" id="ep-${e.key}">
+      <div class="ep-head">
+        <div>
+          <h3 class="ep-title">${e.title}</h3>
+          <p class="muted" style="margin:4px 0 0;font-size:13px">${e.used}</p>
+        </div>
+        <div style="display:flex;gap:14px;align-items:center">
+          <span class="ep-method ${e.method.toLowerCase()}">${e.method}</span>
+          ${e.toggle ? `<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)">
+            Show on site
+            <span class="switch"><input type="checkbox" id="vis-${e.key}" ${cfg.endpoints[e.key].visible ? 'checked' : ''}/><span class="slider-sw"></span></span>
+          </label>` : '<span class="pill" style="font-size:11px">always on</span>'}
+        </div>
+      </div>
+      <div class="ep-row">
+        <label>Endpoint path</label>
+        <input id="path-${e.key}" class="input" type="text" value="${cfg.endpoints[e.key].path}" placeholder="${e.defaultPath}"/>
+        <button class="btn btn-ghost btn-sm" data-test="${e.key}">Test</button>
+        <button class="btn btn-ghost btn-sm" data-copy="${e.key}">Copy URL</button>
+      </div>
+      <div class="test-out" id="out-${e.key}"></div>
+      <div class="schema">
+        <table>
+          <thead><tr><th>Column / Key</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            ${e.columns.map(c => `<tr>
+              <td><code>${c[0]}</code></td>
+              <td class="muted">${c[1]}</td>
+              <td>${c[2] ? '<span class="req">required</span>' : '<span class="opt">optional</span>'}</td>
+              <td class="muted">${c[3]}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <details class="adv">
+        <summary>Sample ${e.method === 'POST' ? 'request + response' : 'response'} JSON</summary>
+        <pre class="sample">${JSON.stringify(e.sample, null, 2)}</pre>
+      </details>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-test]').forEach(b => b.addEventListener('click', () => testEndpoint(b.dataset.test)));
+  list.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', () => copyUrl(b.dataset.copy)));
+  // Auto-save visibility toggles instantly so the site reflects changes without "Save & Apply"
+  list.querySelectorAll('input[id^="vis-"]').forEach(cb => cb.addEventListener('change', save));
+}
+
+function fullUrl(key) {
+  const base = (document.getElementById('api-base').value || '').trim().replace(/\/$/, '');
+  const path = (document.getElementById('path-' + key).value || '').trim();
+  return base + path;
+}
+function copyUrl(key) {
+  const url = fullUrl(key);
+  navigator.clipboard.writeText(url);
+  const out = document.getElementById('out-' + key);
+  out.innerHTML = `<span style="color:var(--emerald)">✓ Copied: ${url}</span>`;
+  setTimeout(() => out.innerHTML = '', 2200);
+}
+async function testEndpoint(key) {
+  const out = document.getElementById('out-' + key);
+  const ep = ENDPOINTS.find(e => e.key === key);
+  const url = fullUrl(key);
+  if (!url || url.startsWith('/')) { out.innerHTML = '<span style="color:#ef4444">⚠ Set the FastAPI Base URL first.</span>'; return; }
+  out.innerHTML = '<span class="muted">Pinging ' + url + ' …</span>';
+  try {
+    const headers = { 'Accept': 'application/json' };
+    const auth = document.getElementById('api-auth').value.trim();
+    if (auth) headers['Authorization'] = auth;
+    const opts = { method: ep.method, headers };
+    if (ep.method === 'POST') { headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(ep.sample.request || ep.sample); }
+    const t0 = performance.now();
+    const res = await fetch(url, opts);
+    const ms = Math.round(performance.now() - t0);
+    const txt = await res.text();
+    const ok = res.ok;
+    out.innerHTML = `<span style="color:${ok ? 'var(--emerald)' : '#ef4444'}">${ok ? '✓' : '✗'} ${res.status} ${res.statusText} · ${ms}ms</span>
+      <pre class="sample" style="margin-top:8px">${escapeHtml(txt.slice(0, 1200))}${txt.length > 1200 ? '\n…' : ''}</pre>`;
+  } catch (err) {
+    out.innerHTML = `<span style="color:#ef4444">✗ ${err.message}</span> <span class="muted">(CORS? Wrong URL? Server down?)</span>`;
+  }
+}
+function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+document.getElementById('save-all').addEventListener('click', save);
+document.getElementById('reset-all').addEventListener('click', () => {
+  if (!confirm('Reset all endpoint settings?')) return;
+  localStorage.removeItem(STORAGE_KEY); location.reload();
+});
+
+render();
+if (cfg.base) setGlobal('ok', 'Configured: ' + cfg.base);
+</script>
+</body></html>

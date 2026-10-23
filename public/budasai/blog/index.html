@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Blog — BUDASAI</title>
+<meta name="description" content="Investing essays, guides and notes — filter by category, level and topic." />
+<meta property="og:title" content="Blog — BUDASAI" />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/budasai/assets/css/styles.css" />
+<style>
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin: 16px 0 4px; }
+  .chip { padding:8px 14px; border:1px solid var(--border); border-radius:999px; cursor:pointer; font-size:13px; color: var(--text-muted); background: var(--surface); transition: all .15s; }
+  .chip:hover { color: var(--text); }
+  .chip.active { background: linear-gradient(135deg, var(--electric), var(--emerald)); color: #fff; border-color: transparent; }
+  .b-thumb { width:100%; height:160px; object-fit:cover; display:block; }
+</style>
+</head>
+<body>
+<div data-component="header"></div>
+<section class="page-header">
+  <div class="hero-grid-bg"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <span class="eyebrow"><span class="dot"></span> Blog</span>
+    <h1>Essays for <span class="gradient-text">serious investors</span>.</h1>
+    <p>Guides, frameworks, and market notes. Filter by category, level, or search by keyword.</p>
+  </div>
+</section>
+
+<section class="section" data-section="blogs">
+  <div class="container">
+    <div class="filters glass">
+      <input class="search input" id="b-search" placeholder="Search posts…"/>
+      <select id="b-level">
+        <option value="">All levels</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+      </select>
+    </div>
+    <div class="chips" id="b-chips"></div>
+    <div class="research-grid" id="b-grid" style="margin-top:18px"></div>
+  </div>
+</section>
+
+<script src="/budasai/assets/js/dummy-data.js"></script>
+<script src="/budasai/assets/js/api.js"></script>
+<script src="/budasai/assets/js/main.js"></script>
+<script>
+let CATS = [], BLOGS = [], activeCat = '';
+const esc = s => String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function thumb(b) {
+  if (b.image_url) return `<img class="b-thumb" src="${b.image_url}" alt="${esc(b.title)}" loading="lazy"/>`;
+  return `<svg viewBox="0 0 400 160" preserveAspectRatio="none"><path d="M0,100 C100,40 200,140 300,70 L400,50 L400,160 L0,160 Z" fill="rgba(47,128,255,.25)"/></svg>`;
+}
+
+function renderChips() {
+  const el = document.getElementById('b-chips');
+  el.innerHTML = `<span class="chip ${activeCat===''?'active':''}" data-cat="">All</span>` +
+    CATS.map(c => `<span class="chip ${activeCat===c.slug?'active':''}" data-cat="${c.slug}">${esc(c.name)}</span>`).join('');
+  el.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => { activeCat = ch.dataset.cat; renderChips(); renderGrid(); }));
+}
+function renderGrid() {
+  const q = document.getElementById('b-search').value.toLowerCase();
+  const lvl = document.getElementById('b-level').value;
+  const grid = document.getElementById('b-grid');
+  const rows = BLOGS.filter(b =>
+    (!activeCat || b.category === activeCat) &&
+    (!lvl || b.level === lvl) &&
+    (!q || (b.title+' '+(b.summary||'')).toLowerCase().includes(q))
+  );
+  grid.innerHTML = rows.map(b => `
+    <article class="research-card glass">
+      <div class="thumb">${thumb(b)}</div>
+      <div class="body">
+        <span class="tag">${esc((CATS.find(c=>c.slug===b.category)||{}).name || b.category)}</span>
+        <h3>${esc(b.title)}</h3>
+        <p class="muted">${esc(b.summary||'')}</p>
+        <div class="meta"><span>${esc(b.level||'')}</span><span>${esc(b.read_time||'')}</span></div>
+      </div>
+    </article>`).join('') || '<p class="muted" style="grid-column:1/-1;text-align:center;padding:40px">No posts match your filters.</p>';
+}
+
+async function init() {
+  const [cats, blogs] = await Promise.all([
+    window.BUDASAI_API.fetchData('blog_categories'),
+    window.BUDASAI_API.fetchData('blogs'),
+  ]);
+  if (!Array.isArray(blogs) || !blogs.length) {
+    document.getElementById('b-grid').innerHTML = `<div class="glass" style="grid-column:1/-1;padding:50px;text-align:center"><h3 style="margin:0 0 8px">No posts available</h3><p class="muted" style="margin:0">Please connect your FastAPI backend in <a href="/budasai/admin" style="color:var(--electric)">Admin</a> to load blog posts.</p></div>`;
+    document.getElementById('b-chips').innerHTML = '';
+    return;
+  }
+  CATS = Array.isArray(cats) && cats.length ? cats : [];
+  BLOGS = blogs;
+  renderChips();
+  ['b-search','b-level'].forEach(id => document.getElementById(id).addEventListener('input', renderGrid));
+  renderGrid();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+<div data-component="footer"></div>
+</body></html>
